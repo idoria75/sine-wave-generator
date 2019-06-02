@@ -121,10 +121,6 @@ void lerArquivoCartaoSD(String nomeDoArquivo) {
     arq.close();
     return;
   }
-<<<<<<< HEAD
-  delay(5);
-  Serial.println(count);
-=======
 }
 
 // Escreve na serial nome dos arquivos que estao
@@ -148,5 +144,4 @@ void printArquivos(File dir, int numTabs) {
     }
     entry.close();
   }
->>>>>>> 4f444814ce3688f74f442e24ee4ce7f140d72a51
 }
