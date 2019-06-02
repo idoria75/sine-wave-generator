@@ -1,6 +1,14 @@
 {
+<<<<<<< HEAD
     "board": "arduino:avr:uno",
     "sketch": "main.ino",
     "port": "/dev/ttyACM0",
     "output": "../build"
+=======
+    "board": "arduino:avr:nano",
+    "sketch": "main.ino",
+    "port": "/dev/ttyUSB0",
+    "output": "build",
+    "configuration": "cpu=atmega328"
+>>>>>>> 4f444814ce3688f74f442e24ee4ce7f140d72a51
 }
