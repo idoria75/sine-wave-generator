@@ -1,0 +1,10 @@
+{
+  "builtInLibrariesFolders": "/opt/arduino-1.8.5/libraries",
+  "customBuildProperties": "build.path=/home/ivan/Documents/sineWaveGenerator/build,build.warn_data_percentage=75,runtime.tools.avr-gcc.path=/opt/arduino-1.8.5/hardware/tools/avr,runtime.tools.avrdude.path=/opt/arduino-1.8.5/hardware/tools/avr,runtime.tools.arduinoOTA.path=/opt/arduino-1.8.5/hardware/tools/avr",
+  "fqbn": "arduino:avr:nano:cpu=atmega328",
+  "hardwareFolders": "/opt/arduino-1.8.5/hardware,/home/ivan/.arduino15/packages",
+  "otherLibrariesFolders": "/home/ivan/Arduino/libraries",
+  "runtime.ide.version": "10805",
+  "sketchLocation": "/home/ivan/Documents/sineWaveGenerator/main.ino",
+  "toolsFolders": "/opt/arduino-1.8.5/tools-builder,/opt/arduino-1.8.5/hardware/tools/avr,/home/ivan/.arduino15/packages"
+}
