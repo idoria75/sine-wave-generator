@@ -1,0 +1,5 @@
+# Saúde dos orgãos
+# Modo: Positivo
+# Tempo: 45 minutos
+123, 1450
+352, 1250
