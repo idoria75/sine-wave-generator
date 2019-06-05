@@ -18,7 +18,6 @@ void setup() {
 
   // Initialize DS3231
   Serial.println("Initialize DS3231");
-  ;
   clock.begin();
 
   // Set sketch compiling time
