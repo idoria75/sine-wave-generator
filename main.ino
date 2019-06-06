@@ -5,6 +5,8 @@
 #include <Wire.h>
 #include <digitalWriteFast.h>
 
+#define LED 7
+
 DS3231 clock;
 RTCDateTime dt;
 File arquivo;
@@ -18,11 +20,13 @@ float duracoes[valoresParaLer];     // Lista das duracoes lidas
 int valoresLidos = 0;
 
 void setup() {
+  pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
   Serial.begin(115200);
   inicializaSD();
   listaArquivosSD();
-  lerArquivoCartaoSD(nomeArquivo);
-  printValoresLidos();
+  // lerArquivoCartaoSD(nomeArquivo);
+  // printValoresLidos();
   // Initialize DS3231
   Serial.println("Initialize DS3231");
   clock.begin();
@@ -31,13 +35,52 @@ void setup() {
   // clock.setDateTime(__DATE__, __TIME__);
 }
 
+String a = "";
 void loop() {
-  printClockData();
-  delay(1000);
+  // printClockData();
+  a = getDateTime();
+  writeToFile(nomeArquivo, a);
+  Serial.println(a);
+  // writeToFile(nomeArquivo, getDateTime());
+  delay(5000);
+}
+
+void writeToFile(String nomeArq, String dataEHora) {
+  digitalWrite(LED, HIGH);
+  File arq = SD.open(nomeArq, FILE_WRITE);
+  arq.println(dataEHora);
+  delay(100);
+  arq.close();
+  digitalWrite(LED, LOW);
+}
+
+String getDateTime() {
+  dt = clock.getDateTime();
+  String resposta = "Utilizado em: ";
+  resposta += dt.hour;
+  resposta += ":";
+  resposta += dt.minute;
+  resposta += ":";
+  resposta += dt.second;
+  resposta += " ";
+  resposta += dt.day;
+  resposta += "-";
+  resposta += dt.month;
+  resposta += "-";
+  resposta += dt.year;
+  return resposta;
 }
 
 void printClockData() {
   dt = clock.getDateTime();
+
+  String resposta = "";
+  resposta += dt.year;
+  resposta += "-";
+  resposta += dt.month;
+  resposta += "-";
+  resposta += dt.day;
+  Serial.println(resposta);
 
   Serial.print("Raw data: ");
   Serial.print(dt.year);
@@ -52,6 +95,7 @@ void printClockData() {
   Serial.print(":");
   Serial.print(dt.second);
   Serial.println("");
+  // Serial.println(dt.year + "-" + dt.month + "-" + dt.day);
 }
 
 void inicializaSD() {
