@@ -24,7 +24,7 @@ void setup() {
   clock.begin();
   delay(100);
   // Configura relogio (rodar somente uma vez)
-  clock.setDateTime(__DATE__, __TIME__);
+  // clock.setDateTime(__DATE__, __TIME__);
 }
 
 // Escreve no arquivo a cada 5 segundos
