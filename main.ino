@@ -12,12 +12,8 @@ RTCDateTime dt;
 File arquivo;
 char nomeArquivo[] = "LOG.TXT";
 
-const int valoresParaLer = 20;
-byte chipSelectPin = 4;             // Pino do cartão SD
-float valorLido = 0;                // Variável que armazena último valor lido
-float frequencias[valoresParaLer];  // Lista das frequencias lidas
-float duracoes[valoresParaLer];     // Lista das duracoes lidas
-int valoresLidos = 0;
+byte chipSelectPin = 4;  // Pino do cartão SD
+String aux = "";
 
 void setup() {
   pinMode(LED, OUTPUT);
@@ -25,26 +21,22 @@ void setup() {
   Serial.begin(115200);
   inicializaSD();
   listaArquivosSD();
-  // lerArquivoCartaoSD(nomeArquivo);
-  // printValoresLidos();
-  // Initialize DS3231
-  Serial.println("Initialize DS3231");
   clock.begin();
   delay(100);
-  // Set sketch compiling time
-  // clock.setDateTime(__DATE__, __TIME__);
+  // Configura relogio (rodar somente uma vez)
+  clock.setDateTime(__DATE__, __TIME__);
 }
 
-String a = "";
+// Escreve no arquivo a cada 5 segundos
 void loop() {
-  // printClockData();
-  a = getDateTime();
-  writeToFile(nomeArquivo, a);
-  Serial.println(a);
-  // writeToFile(nomeArquivo, getDateTime());
+  aux = getDateTime();
+  writeToFile(nomeArquivo, aux);
+  Serial.println(aux);
   delay(5000);
 }
 
+// Escreve no arquivo e mantém LED aceso p/ evitar
+// corremper o cartao SD
 void writeToFile(String nomeArq, String dataEHora) {
   digitalWrite(LED, HIGH);
   File arq = SD.open(nomeArq, FILE_WRITE);
@@ -54,6 +46,7 @@ void writeToFile(String nomeArq, String dataEHora) {
   digitalWrite(LED, LOW);
 }
 
+// Retorna string com data e hora
 String getDateTime() {
   dt = clock.getDateTime();
   String resposta = "Utilizado em: ";
@@ -71,33 +64,6 @@ String getDateTime() {
   return resposta;
 }
 
-void printClockData() {
-  dt = clock.getDateTime();
-
-  String resposta = "";
-  resposta += dt.year;
-  resposta += "-";
-  resposta += dt.month;
-  resposta += "-";
-  resposta += dt.day;
-  Serial.println(resposta);
-
-  Serial.print("Raw data: ");
-  Serial.print(dt.year);
-  Serial.print("-");
-  Serial.print(dt.month);
-  Serial.print("-");
-  Serial.print(dt.day);
-  Serial.print(" ");
-  Serial.print(dt.hour);
-  Serial.print(":");
-  Serial.print(dt.minute);
-  Serial.print(":");
-  Serial.print(dt.second);
-  Serial.println("");
-  // Serial.println(dt.year + "-" + dt.month + "-" + dt.day);
-}
-
 void inicializaSD() {
   if (!SD.begin(chipSelectPin)) {
     Serial.println("Falha na inicializacao");
@@ -113,94 +79,6 @@ void listaArquivosSD() {
   Serial.println("Arquivos no cartão SD:");
   printArquivos(root, 0);
   root.close();
-}
-
-// Rotina para ler ate certo caracter
-float readUntilChar(File f, char delimitador) {
-  char charRead;
-  String valorEmString = "";
-
-  // Verifica final do arquivo
-  if (!(f.available())) {
-    return -1;
-  }
-
-  while (f.available()) {
-    char caractAtual = f.read();
-    if (caractAtual == delimitador) {
-      // Serial.println("-");
-      // Serial.println(valorEmString.toFloat());
-      return valorEmString.toFloat();
-    } else {
-      valorEmString += caractAtual;
-    }
-  }
-}
-
-// Rotina que pula linhas que comecam com #
-void pulaLinhaComentario(File f) {
-  char a;
-  while (a != '\n') {
-    a = f.read();
-  }
-}
-
-void lerArquivoCompleto(String nomeDoArquivo) {
-  File arq = SD.open(nomeDoArquivo);
-  Serial.print("Arquivo: ");
-  Serial.println(nomeDoArquivo);
-  Serial.println(arq.available());
-  while (arq.available() > 0) {
-    char c = arq.read();
-    Serial.print(c);
-    delay(20);
-  }
-  arq.close();
-}
-
-// Funcao que le dados de frequencia e periodo
-// e salva nas respectivas listas
-void lerArquivoCartaoSD(String nomeDoArquivo) {
-  Serial.print("Lendo arquivo: ");
-  Serial.println(nomeDoArquivo);
-  File arq = SD.open(nomeDoArquivo);
-  // Serial.println(arq.available());
-  if (arq) {
-    while (arq.peek() == '#') {
-      pulaLinhaComentario(arq);
-    }
-    while ((valorLido != -1) and (valoresLidos < valoresParaLer)) {
-      valorLido = readUntilChar(arq, ',');
-      // Serial.print("Valor lido freq: ");
-      // Serial.println(valorLido);
-      if (valorLido == -1) {
-        break;
-      } else {
-        frequencias[valoresLidos] = valorLido;
-        valorLido = readUntilChar(arq, '\n');
-        // Serial.print("Valor lido periodo: ");
-        // Serial.println(valorLido);
-        duracoes[valoresLidos] = valorLido;
-        valoresLidos++;
-      }
-    }
-    arq.close();
-  } else {
-    Serial.println("Problema no arquivo!");
-    Serial.print("Nome do arquivo informado: ");
-    Serial.println(nomeDoArquivo);
-    arq.close();
-    return;
-  }
-}
-
-// Imprime na tela os valores armazenados nas listas
-void printValoresLidos() {
-  for (int i = 0; i < valoresLidos; i++) {
-    Serial.print(frequencias[i]);
-    Serial.print(",");
-    Serial.println(duracoes[i]);
-  }
 }
 
 // Escreve na serial nome dos arquivos que estao
