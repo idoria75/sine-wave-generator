@@ -203,19 +203,6 @@ void pulaLinhaComentario(File f) {
   }
 }
 
-void lerArquivoCompleto(String nomeDoArquivo) {
-  File arq = SD.open(nomeDoArquivo);
-  Serial.print("Arquivo: ");
-  Serial.println(nomeDoArquivo);
-  Serial.println(arq.available());
-  while (arq.available() > 0) {
-    char c = arq.read();
-    Serial.print(c);
-    delay(20);
-  }
-  arq.close();
-}
-
 // Funcao que le dados de frequencia e periodo
 // e salva nas respectivas listas
 void lerArquivoCartaoSD(String nomeDoArquivo) {
@@ -285,6 +272,7 @@ void printArquivos(File dir, int numTabs) {
   }
 }
 
+// Codigo p/ configuracao do timer 1
 ISR(TIMER1_COMPA_vect) {
   digitalWrite(isochonicPin, nivelLogico);
   nivelLogico = !nivelLogico;
