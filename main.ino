@@ -3,7 +3,10 @@
 #include <SD.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <avr/interrupt.h>
+#include <avr/io.h>
 #include <digitalWriteFast.h>
+#include <util/atomic.h>
 
 #define LED 7
 #define FNC_PIN 9
@@ -12,17 +15,21 @@
 DS3231 clock;
 RTCDateTime dt;
 File arquivo;
-char nomeArquivo[] = "LOG.TXT";
-
+char arquivoEntrada[] = "FREQS3.TXT";
+char arquivoSaida[] = "LOG3.TXT";
 String aux = "";
-const int valoresParaLer = 15;      // Quantos pares de (f,T) serão lidos
-byte chipSelectPin = 4;             // Pino do cartão SD
+const byte valoresParaLer = 10;     // Quantos pares de (f,T) serão lidos
+const byte chipSelectPin = 4;       // Pino do cartão SD
 float valorLido = 0;                // Variável que armazena último valor lido
 float frequencias[valoresParaLer];  // Lista das frequencias lidas
-float duracoes[valoresParaLer];     // Lista das duracoes lidas
-int valoresLidos = 0;               // Contador de valores lidos
+int duracoes[valoresParaLer];       // Lista das duracoes lidas
+byte valoresLidos = 0;              // Contador de valores lidos
 
 unsigned long tempoInicioOnda = 0;
+
+boolean nivelLogico = true;
+const byte isochonicPin = 9;
+
 // Inicializa AD9833
 AD9833 gen(FNC_PIN);
 AD9833 gen2(FNC_PIN2);
@@ -36,43 +43,58 @@ void setup() {
   Serial.begin(115200);
   inicializaSD();
   listaArquivosSD();
-  lerArquivoCartaoSD(nomeArquivo);
+  lerArquivoCartaoSD(arquivoEntrada);
   printValoresLidos();
 
   clock.begin();
   delay(100);
   // Configura relogio (rodar somente uma vez)
   // clock.setDateTime(__DATE__, __TIME__);
+  pinMode(isochonicPin, OUTPUT);
+  configuraTimer1();
 
   for (int i = 0; i < valoresLidos; i++) {
+    aux = getDateTime();
     geraOndaSenoidal(frequencias[i], duracoes[i]);
+    Serial.println("SD->Hora");
+    writeToFile(arquivoSaida, aux);
+    Serial.println("SD->Data");
+    writeToFile(arquivoSaida, frequencias[i], duracoes[i]);
   }
 }
 
-// Escreve no arquivo a cada 5 segundos
-void loop() {
-  aux = getDateTime();
-  writeToFile(nomeArquivo, aux);
-  Serial.println(aux);
-  delay(5000);
-}
+void loop() {}
 
-// Escreve no arquivo e mantém LED aceso p/ evitar
-// corremper o cartao SD
-void writeToFile(String nomeArq, String dataEHora) {
+// Escreve no arquivo e mantém LED aceso durante escrita
+// p/ evitar corremper o cartao SD
+void writeToFile(String nomeArq, String data) {
   digitalWrite(LED, HIGH);
   File arq = SD.open(nomeArq, FILE_WRITE);
-  arq.println(dataEHora);
+  arq.println(data);
   delay(100);
   arq.close();
   digitalWrite(LED, LOW);
 }
+
+// Escreve no arquivo e mantém LED aceso durante escrita
+// p/ evitar corremper o cartao SD
+void writeToFile(String nomeArq, float f1, int f2) {
+  digitalWrite(LED, HIGH);
+  File arq = SD.open(nomeArq, FILE_WRITE);
+  arq.print(f1);
+  arq.print(", ");
+  arq.println(f2);
+  delay(100);
+  arq.close();
+  digitalWrite(LED, LOW);
+}
+
+// Gera nos ADs as senoides desejadas
 void geraOndaSenoidal(float frequencia, float periodo) {
-  Serial.print("Gerando Onda Senoidal -> ");
-  Serial.print("Frequencia: ");
+  Serial.print("Freq ");
   Serial.print(frequencia);
   Serial.print(", ");
-  Serial.print("Periodo: ");
+  Serial.print("Per: ");
   Serial.println(periodo);
 
   // Atualizar interface aqui
@@ -80,13 +102,14 @@ void geraOndaSenoidal(float frequencia, float periodo) {
   // Valor de frequencia p/ AD9833
   unsigned long freq_ad = frequencia * 100;
   // Valor de periodo p/ habilitar senoide
-  int tempo = periodo * 1000;
+  unsigned long tempo = periodo * 1000;
 
   // Envia dados ao AD9833
   gen.ApplySignal(SINE_WAVE, REG0, freq_ad);
   gen2.ApplySignal(SINE_WAVE, REG0, freq_ad - 783);
   gen.EnableOutput(true);
   gen2.EnableOutput(true);
+
   // Variavel auxiliar para controle do tempo
   unsigned long tempoAtual = millis();  // = 0
   // Armazena tempo atual
@@ -102,6 +125,7 @@ void geraOndaSenoidal(float frequencia, float periodo) {
       tempoAtual = millis();
     }
   }
+
   // Desliga saida do AD9833
   gen.EnableOutput(false);
   gen2.EnableOutput(false);
@@ -164,8 +188,6 @@ float readUntilChar(File f, char delimitador) {
   while (f.available()) {
     char caractAtual = f.read();
     if (caractAtual == delimitador) {
-      // Serial.println("-");
-      // Serial.println(valorEmString.toFloat());
       return valorEmString.toFloat();
     } else {
       valorEmString += caractAtual;
@@ -236,6 +258,7 @@ void printValoresLidos() {
     Serial.print(frequencias[i]);
     Serial.print(",");
     Serial.println(duracoes[i]);
+    delay(10);
   }
 }
 
@@ -260,4 +283,28 @@ void printArquivos(File dir, int numTabs) {
     }
     entry.close();
   }
+}
+
+ISR(TIMER1_COMPA_vect) {
+  digitalWrite(isochonicPin, nivelLogico);
+  nivelLogico = !nivelLogico;
+}
+
+void configuraTimer1() {
+  // Desabilita interrupcoes
+  cli();
+  TCCR1A = 0;
+  TCCR1B = 0;
+  // 7.83 Hz (3.915Hz p/ cada nível lógico):
+  OCR1A = 63856;
+  // Modo CTC:
+  TCCR1B |= (1 << WGM12);
+  // Prescaler 64:
+  TCCR1B |= (1 << CS10);
+  TCCR1B |= (1 << CS11);
+  TCCR1B |= (0 << CS12);
+  // Habilita CTC:
+  TIMSK1 |= (1 << OCIE1A);
+  // Habilita interrupcoes
+  sei();
 }
